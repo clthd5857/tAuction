@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:mybatis-spring="http://mybatis.org/schema/mybatis-spring"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring-1.2.xsd
+		http://www.springframework.org/schema/beans https://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+	
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+		<property name="host" value="smtp.naver.com"/>
+		<property name="port" value="465"/>
+		<property name="username" value="clthd5857"/>
+		<property name="password" value="****"/><!-- Password -->
+
+	<!-- 보안연결 SSL과 관련된 설정  -->
+		<property name="javaMailProperties">
+		 <props>
+		 <prop key="mail.smtp.auth">true</prop>
+		 <prop key="mail.smtp.starttls.enable">true</prop>
+		 <prop key="mail.smtp.checkserveridentity">true</prop>
+		 <prop key="mail.smtp.ssl.trust">*</prop>
+		 <prop key="mail.smtp.debug">true</prop>
+		 <prop key="mail.smtp.socketFactory.class">javax.net.ssl.SSLSocketFactory</prop>
+		 </props>
+		</property>
+	</bean>
+	
+	<!-- Root Context: defines shared resources visible to all other web components -->
+	<bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+		<property name="driverClassName" value="net.sf.log4jdbc.sql.jdbcapi.DriverSpy"/>
+		<property name="jdbcUrl" value="jdbc:log4jdbc:oracle:thin:@localhost:1521:orcl"/>
+		<property name="username" value="tAuction"></property>
+		<property name="password" value="tAuction"></property>
+	</bean>
+
+	<!-- HikariCP configuration -->
+	<bean id="dataSource" class="com.zaxxer.hikari.HikariDataSource"
+		destroy-method="close">
+		<constructor-arg ref="hikariConfig" />
+	</bean>
+
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	<tx:annotation-driven/>
+
+	<mybatis-spring:scan base-package="org.spring5.mapper" />
+		
+</beans>

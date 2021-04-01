@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="org.spring5.mapper.BoardAttachMapper"> 
+
+
+	<!-- 첨부파일 정보등록 -->
+	<insert id="attachInsert">
+		insert into tAuction.attach (uuid, uploadPath, fileName, fileType, bno)
+		values (#{uuid}, #{uploadPath}, #{fileName}, #{fileType}, #{bno})
+	</insert>
+	
+	<!-- 첨부파일 정보삭제  -->
+	<delete id="attachDelete">
+		delete from tAuction.attach where uuid = #{uuid}
+	</delete>
+	
+	<!-- 첨부파일 정보 불러오기 -->
+	<select id="attachFindByBno" resultType="org.spring5.domain.BoardAttachVO">
+		select * from tAuction.attach where bno = #{bno}
+	</select>
+	
+	<update id="imageFileUpate">
+		UPDATE tAuction.board
+		SET imageFileName = (select (uploadPath ||'/'|| uuid || '_' || fileName) imageFileName
+                    		 from tAuction.attach
+                     		 where bno=#{bno} AND fileType='I' AND ROWNUM=1)
+		where bno=#{bno}
+	</update>
+	
+	<!-- 게시글 삭제시 해당bno 첨부파일 삭제 -->
+	<delete id="attachDeleteAll">
+		delete from tAuction.attach where bno = #{bno}
+	</delete>
+	
+	<select id="selectAttachFilesBeforeOneDay" resultType="org.spring5.domain.BoardAttachVO">
+	<![CDATA[
+		select *
+		from tAuction.attach
+		where uploadpath = TO_CHAR(sysdate -1, 'yyyy\mm\dd')
+	]]>
+	</select>
+
+</mapper>
+

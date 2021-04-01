@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.spring5.mapper.BoardMapper">
+	
+
+	<select id="boardGetListWithPaging" resultType="org.spring5.domain.BoardVO">
+		<![CDATA[
+			SELECT bno, category ,title, contents, imageFileName, regdate, updateDate, dueDate, viewCount, bidCount, minPrice, maxPrice, currentPrice, memberId
+			FROM (SELECT /*+ INDEX_DESC(a pk_board) */ rownum rn, a.*
+				  FROM tAuction.board a
+		]]>		  
+			<choose>
+				<when test="category!=null and category!=''">
+					<![CDATA[
+						WHERE category=#{category} and flag='I' and rownum <= #{pageNum}*#{amount} 
+					]]>
+				</when>
+				<otherwise>
+					<![CDATA[
+						WHERE flag='I' AND rownum  <= #{pageNum}*#{amount} 
+					]]>
+				</otherwise>
+			</choose>
+		<![CDATA[		  
+				  )
+			WHERE rn > (#{pageNum}-1)*#{amount} 
+		]]>
+	</select>
+
+	<select id="boardGetListWithPagingAndSearching" resultType="org.spring5.domain.BoardVO">
+		<![CDATA[
+			SELECT bno, category ,title, contents, imageFileName, regdate, updateDate, dueDate, viewCount, bidCount, minPrice, maxPrice, currentPrice, memberId
+			FROM (SELECT /*+ INDEX_DESC(a pk_board) */ rownum rn, a.*
+				  FROM tAuction.board a
+				  WHERE
+		]]>		  
+			<if test="searchKeyword!=null and searchKeyword!=''">
+			<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+				<foreach item='searchType' collection="searchTypeArr">
+					<trim prefix="OR" >
+						<choose>
+							<when test="searchType=='T'.toString()">
+								title like '%' || #{searchKeyword} || '%'
+							</when>
+							<when test="searchType=='C'.toString()">
+								contents like '%' || #{searchKeyword} || '%'
+							</when>
+							<when test="searchType=='W'.toString()">
+								memberId like '%' || #{searchKeyword} || '%'
+							</when>
+						</choose>
+					</trim>
+				</foreach>
+			</trim>
+			</if>
+			<choose>
+				<when test="category!=null and category!=''">
+					<![CDATA[
+						category=#{category} and flag='I' and rownum <= #{pageNum}*#{amount} 
+					]]>
+				</when>
+				<otherwise>
+					<![CDATA[
+						flag='I' AND rownum <= #{pageNum}*#{amount} 
+					]]>
+				</otherwise>
+			</choose>
+		<![CDATA[
+				   )
+			WHERE rn > (#{pageNum}-1)*#{amount} 
+		]]>
+	</select>
+	
+	<select id="boardGetTotalCount" resultType="int">
+		SELECT count(bno)
+		FROM tAuction.board
+		<where>
+			<choose>
+				<when test="category!=null and category!=''">
+					category=#{category} AND flag='I'
+				</when>
+				<otherwise>
+					flag='I'
+				</otherwise>
+			</choose>
+			
+			<if test="searchKeyword!=null and searchKeyword!=''">
+				<trim prefix="AND (" suffix=") " prefixOverrides="OR" >
+					<foreach item='searchType' collection="searchTypeArr">
+						<trim prefix="OR" >
+							<choose>
+								<when test="searchType=='T'.toString()">
+									title like '%' || #{searchKeyword} || '%'
+								</when>
+								<when test="searchType=='C'.toString()">
+									contents like '%' || #{searchKeyword} || '%'
+								</when>
+								<when test="searchType=='W'.toString()">
+									memberId like '%' || #{searchKeyword} || '%'
+								</when>
+							</choose>
+						</trim>
+					</foreach>
+				</trim>
+			</if>
+		</where>
+	</select>
+	
+	<select id="boardGetListDueDateCheck" resultType="org.spring5.domain.BoardVO">
+		SELECT *
+		FROM tAuction.board
+		WHERE flag='I'
+	</select>
+	
+	<insert id="boardInsert">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+			SELECT tAuction.seq_board.nextval FROM dual
+		</selectKey>
+		INSERT INTO tAuction.board
+		<choose>
+			<when test="maxPrice!=null and maxPrice!=''">
+				VALUES (#{bno}, #{category}, #{title}, #{contents}, null, default, default, #{dueDate}, 0, 0, #{minPrice},#{maxPrice},default,default, #{memberId})
+			</when>
+			<otherwise>
+				VALUES (#{bno}, #{category}, #{title}, #{contents}, null, default, default, #{dueDate}, 0, 0, #{minPrice}, null, default ,default, #{memberId})
+			</otherwise>		
+		</choose>
+	</insert><!-- #{dueDate} 테스트를 위해 잠시 수정 -->
+	
+	<select id="boardRead" resultType="org.spring5.domain.BoardVO">
+		SELECT *
+		FROM tAuction.board
+		WHERE bno=#{bno}
+	</select>
+	
+	<!-- 조회수 -->
+	<update id="viewCount">
+		UPDATE tAuction.board
+		SET viewCount = (SELECT viewCount
+						FROM tAuction.board
+						WHERE bno=#{bno}) + 1
+		WHERE bno = #{bno}
+	</update>
+	
+	
+	<update id="boardModify">
+		UPDATE tAuction.board
+		<choose>
+			<when test="imageFileName!=null and imageFileName!=''">
+				<choose>
+					<when test="maxPrice!=null and maxPrice!=''">
+						SET category=#{category}, title=#{title}, contents=#{contents}, imageFileName=#{imageFileName}, updateDate=sysTimestamp(3), dueDate=#{dueDate}, minPrice=#{minPrice}, maxPrice=#{maxPrice}
+					</when>
+					<otherwise>
+						SET category=#{category}, title=#{title}, contents=#{contents}, imageFileName=#{imageFileName}, updateDate=sysTimestamp(3), dueDate=#{dueDate}, minPrice=#{minPrice}
+					</otherwise>
+				</choose>
+			</when>
+			<otherwise>
+				<choose>
+					<when test="maxPrice!=null and maxPrice!=''">
+						SET category=#{category}, title=#{title}, contents=#{contents}, updateDate=sysTimestamp(3), dueDate=#{dueDate}, minPrice=#{minPrice}, maxPrice=#{maxPrice}
+					</when>
+					<otherwise>
+						SET category=#{category}, title=#{title}, contents=#{contents}, updateDate=sysTimestamp(3), dueDate=#{dueDate}, minPrice=#{minPrice}
+					</otherwise>
+				</choose>
+			</otherwise>
+		</choose>
+		WHERE bno=#{bno}
+	</update>
+	
+	<update id="boardRemove">
+		UPDATE tAuction.board
+		SET flag='R'
+		WHERE bno=#{bno}
+	</update>
+
+	<update id="boardDelete">
+		DELETE FROM tAuction.board
+		WHERE bno=#{bno}
+	</update>
+	
+	<!-- *********************************************Auction******************************************* -->
+	<!-- board 테이블 값 업로드 -->
+	<update id="biddingBoardUpdate">
+		UPDATE tAuction.board
+		SET currentPrice=NVL((SELECT MAX(myPrice)
+						  	  FROM tAuction.auctionDetail
+						  	  WHERE bno=#{bno}), 0)
+		WHERE bno=#{bno}
+	</update>
+	
+	<!-- board 테이블 값 업로드 : bidCount -->
+	<update id="bidCountUpdate">
+		UPDATE tAuction.board
+		SET bidCount = NVL((SELECT count(*)
+							FROM tAuction.auctionDetail
+							WHERE bno=#{bno}),0)
+		WHERE bno=#{bno}
+	</update>
+	
+	<!-- 경매 마감 -->
+	<update id="biddingEnd">
+		UPDATE tAuction.board
+		SET flag = 'E'
+		WHERE bno = #{bno}
+	</update>
+	
+	<!-- 상세보기 페이지에서 값 읽어오기 -->
+	<select id="biddingRead" resultType="org.spring5.domain.AuctionDetailVO">
+		SELECT *
+		FROM tAuction.auctionDetail
+		WHERE bno=#{bno} and memberId=#{memberId}
+	</select>
+	
+	<!-- 마이 페이지에서 값 읽어오기 -->
+	<select id="biddingReadInMyPage" resultType="org.spring5.domain.AuctionDetailVO">
+		SELECT *
+		FROM tAuction.acutionDetail
+		WHERE memberId=#{memberId}
+	</select>
+	
+	<!-- 같은 경매 상품에 대한 입력 값 확인 -->
+	<select id="biddingCheck" resultType="int">
+		SELECT count(*)
+		FROM tAuction.auctionDetail
+		<where>
+			<choose>
+				<when test="memberId!=null and memberId!=''">
+					bno=#{bno} and memberId=#{memberId}
+				</when>
+				<otherwise>
+					bno=#{bno}
+				</otherwise>
+			</choose>
+		</where>
+	</select>
+	
+	<!-- 입찰가 수정 -->
+	<update id="biddingUpdate">
+		UPDATE tAuction.auctionDetail
+		SET myPrice = #{myPrice}
+		where bno=#{bno} AND memberId=#{memberId}
+	</update>
+	
+	<!-- 새 경매 입찰 -->
+	<insert id="biddingInsert">
+		<selectKey keyProperty="dtNo" order="BEFORE" resultType="long">
+			SELECT tAuction.seq_auctionDetail.nextval FROM dual
+		</selectKey>
+		INSERT INTO tAuction.auctionDetail (dtNo, myPrice, biddingDate, memberId, bno)
+		VALUES (#{dtNo}, #{myPrice}, default, #{memberId},#{bno})
+	</insert>
+	
+	<!-- 입찰 취소 -->
+	<delete id="biddingDelete">
+		DELETE FROM tAuction.auctionDetail
+		WHERE bno=#{bno} AND memberId=#{memberId}
+	</delete>
+	
+	<!-- winner 설정 -->
+	<update id="updateWinner">
+		<selectKey keyProperty="memberId" order="BEFORE" resultType="String">
+			SELECT memberId
+			FROM tAuction.auctionDetail
+			WHERE bno =#{bno} and myPrice = (SELECT currentPrice
+											 FROM tAuction.board
+											 WHERE bno=#{bno})
+		</selectKey>
+		<if test="memberId!=null and memberId!=''">
+			UPDATE tAuction.auctionDetail
+			SET winner = 'T'
+			WHERE bno = #{bno} AND memberId = #{memberId}
+		</if>
+	</update>
+
+	<delete id="deleteNotWinner">
+		DELETE FROM tAuction.auctionDetail
+		WHERE winner = 'F' AND bno=#{bno}
+	</delete>
+
+	<!-- *********************************************likeTo******************************************* -->
+	<!-- 찜 여부 조회-->
+	<select id="likeToCheck" resultType="String">
+		select like_check
+		from tAuction.likeTo
+		where memberId = #{memberId} and bno = #{bno}
+	</select>
+	
+	<!-- 찜 bno 리스트 -->
+	<select id="getLikeBno" resultType="Long">
+		select bno
+		from tAuction.likeTo
+		where memberId = #{memberId}
+	</select>
+	
+	<!-- 찜 카운트 -->
+	<select id="likeCountByBno" resultType="Long">
+		select count(*) 
+		from tAuction.likeTo
+		where bno = #{bno}
+	</select>
+	
+	<!-- 찜 체크 -->
+	<insert id="like_check">
+		insert into tAuction.likeTo (likeNo, like_check, memberId, bno)
+		values (tAuction.seq_likeTo.nextval, 'T', #{memberId}, #{bno})
+	</insert>
+	
+	<!-- 찜 해제 -->
+	<delete id="like_check_cancel">
+		delete from tAuction.likeTo
+		where memberId = #{memberId} and bno=#{bno}
+	</delete>
+
+	
+</mapper>

@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+<mapper namespace="org.spring5.mapper.MemBoardMapper"> <!-- 패키지명이 포함된 인터페이스 이름을 설정합니다. -->
+
+
+<!-- 1-1. 내 찜 리스트 -->
+<select id="myLikeList" resultType="org.spring5.domain.BoardVO">
+	select * 
+	from (select /*+ INDEX_DESC(a pk_likeTo) */ rownum rn, b.*
+		  from tAuction.likeTo a,
+	     	   tAuction.board b
+		  where
+		  <if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+			<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+				<foreach item='cri.searchType' collection="cri.searchTypeArr">
+					<trim prefix="OR" >
+						<choose>
+							<when test="cri.searchType=='T'.toString()">
+								b.title like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='C'.toString()">
+								b.contents like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='W'.toString()">
+								b.memberId like '%' || #{cri.searchKeyword} || '%'
+							</when>
+						</choose>
+					</trim>
+				</foreach>
+			</trim>
+			</if>
+			<choose>
+				<when test="cri.category!=null and cri.category!=''">
+					<![CDATA[
+						b.category=#{cri.category} and rownum <= #{cri.pageNum}*#{cri.amount}
+						and a.memberId = #{memberId}
+	      				and a.bno = b.bno 
+					]]>
+				</when>
+				<otherwise>
+					<![CDATA[
+						rownum <= #{cri.pageNum}*#{cri.amount}
+						and a.memberId= #{memberId}
+	      				and a.bno = b.bno
+					]]>
+				</otherwise>
+			</choose>
+		<![CDATA[
+				   )
+			WHERE rn > (#{cri.pageNum}-1)*#{cri.amount} 
+		]]>
+			
+</select>
+
+<!-- 1-2. 찜 리스트 카운트 -->
+<select id="likeListTotalCount" resultType="int">
+	select count(*)
+	from tAuction.likeTo a,
+	     tAuction.board b
+    where
+	<if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+	<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+		<foreach item='cri.searchType' collection="cri.searchTypeArr">
+			<trim prefix="OR" >
+				<choose>
+					<when test="cri.searchType=='T'.toString()">
+						b.title like '%' || #{cri.searchKeyword} || '%'
+					</when>
+					<when test="cri.searchType=='C'.toString()">
+						b.contents like '%' || #{cri.searchKeyword} || '%'
+					</when>
+					<when test="cri.searchType=='W'.toString()">
+						b.memberId like '%' || #{cri.searchKeyword} || '%'
+					</when>
+				</choose>
+			</trim>
+		</foreach>
+	</trim>
+	</if>
+	<choose>
+		<when test="cri.category!=null and cri.category!=''">
+			<![CDATA[
+				b.category=#{cri.category}
+				and a.memberId = #{memberId}
+	    		and a.bno = b.bno 
+			]]>
+		</when>
+		<otherwise>
+			<![CDATA[
+				a.memberId= #{memberId}
+	    		and a.bno = b.bno
+			]]>
+		</otherwise>
+	</choose>
+</select>
+
+
+
+<!-- 2-1. 내 입찰 리스트 -->
+<select id="myBiddingList" resultType="org.spring5.domain.MyBiddingVO">
+	select bno, category, title, myPrice, biddingDate 
+	from (select /*+ INDEX_DESC(a pk_auctionDetail) */ rownum rn, b.*, a.myPrice, a.biddingDate
+		  from tAuction.auctionDetail a,
+	     	   tAuction.board b
+    	  where
+		  <if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+			<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+				<foreach item='cri.searchType' collection="cri.searchTypeArr">
+					<trim prefix="OR" >
+						<choose>
+							<when test="cri.searchType=='T'.toString()">
+								b.title like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='C'.toString()">
+								b.contents like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='W'.toString()">
+								b.memberId like '%' || #{cri.searchKeyword} || '%'
+							</when>
+						</choose>
+					</trim>
+				</foreach>
+			</trim>
+			</if>
+			<choose>
+				<when test="cri.category!=null and cri.category!=''">
+					<![CDATA[
+						b.category=#{cri.category} and rownum <= #{cri.pageNum}*#{cri.amount}
+						and a.memberId = #{memberId}
+	      				and a.bno = b.bno 
+					]]>
+				</when>
+				<otherwise>
+					<![CDATA[
+						rownum <= #{cri.pageNum}*#{cri.amount}
+						and a.memberId= #{memberId}
+	      				and a.bno = b.bno
+					]]>
+				</otherwise>
+			</choose>
+		<![CDATA[
+				   )
+			WHERE rn > (#{cri.pageNum}-1)*#{cri.amount} 
+		]]>
+			
+</select>
+
+<!-- 2-2. 입찰 리스트 카운트 -->
+<select id="BiddingListTotalCount" resultType="int">
+	select count(*)
+	from tAuction.auctionDetail a,
+	     tAuction.board b
+    where
+	<if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+	<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+		<foreach item='cri.searchType' collection="cri.searchTypeArr">
+			<trim prefix="OR" >
+				<choose>
+					<when test="cri.searchType=='T'.toString()">
+						b.title like '%' || #{searchKeyword} || '%'
+					</when>
+					<when test="cri.searchType=='C'.toString()">
+						b.contents like '%' || #{searchKeyword} || '%'
+					</when>
+					<when test="cri.searchType=='W'.toString()">
+						b.memberId like '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</trim>
+		</foreach>
+	</trim>
+	</if>
+	<choose>
+		<when test="cri.category!=null and cri.category!=''">
+			<![CDATA[
+				b.category=#{cri.category}
+				and a.memberId = #{memberId}
+	    		and a.bno = b.bno 
+			]]>
+		</when>
+		<otherwise>
+			<![CDATA[
+				a.memberId= #{memberId}
+	    		and a.bno = b.bno
+			]]>
+		</otherwise>
+	</choose>
+</select>
+
+<!-- 3-1. 내 낙찰 리스트 -->
+<select id="myWinningList" resultType="org.spring5.domain.MyBiddingVO">
+	select bno, category, title, myPrice, biddingDate 
+	from (select /*+ INDEX_DESC(a pk_auctionDetail) */ rownum rn, b.*, a.myPrice, a.biddingDate
+		  from tAuction.auctionDetail a,
+	     	   tAuction.board b
+    	  where
+		  <if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+			<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+				<foreach item='cri.searchType' collection="cri.searchTypeArr">
+					<trim prefix="OR" >
+						<choose>
+							<when test="cri.searchType=='T'.toString()">
+								b.title like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='C'.toString()">
+								b.contents like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='W'.toString()">
+								b.memberId like '%' || #{cri.searchKeyword} || '%'
+							</when>
+						</choose>
+					</trim>
+				</foreach>
+			</trim>
+			</if>
+			<choose>
+				<when test="cri.category!=null and cri.category!=''">
+					<![CDATA[
+						b.category=#{cri.category} and rownum <= #{cri.pageNum}*#{cri.amount}
+						and a.memberId = #{memberId}
+	      				and a.winner = 'T'
+	      				and a.bno = b.bno 
+					]]>
+				</when>
+				<otherwise>
+					<![CDATA[
+						rownum <= #{cri.pageNum}*#{cri.amount}
+						and a.memberId= #{memberId}
+						and a.winner = 'T'
+	      				and a.bno = b.bno
+					]]>
+				</otherwise>
+			</choose>
+		<![CDATA[
+				   )
+			WHERE rn > (#{cri.pageNum}-1)*#{cri.amount} 
+		]]>
+			
+</select>
+
+<!-- 3-2. 낙찰 리스트 카운트 -->
+<select id="winningListTotalCount" resultType="int">
+	select count(*)
+	from tAuction.auctionDetail a,
+	     tAuction.board b
+    where
+	<if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+	<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+		<foreach item='cri.searchType' collection="cri.searchTypeArr">
+			<trim prefix="OR" >
+				<choose>
+					<when test="cri.searchType=='T'.toString()">
+						b.title like '%' || #{searchKeyword} || '%'
+					</when>
+					<when test="cri.searchType=='C'.toString()">
+						b.contents like '%' || #{searchKeyword} || '%'
+					</when>
+					<when test="cri.searchType=='W'.toString()">
+						b.memberId like '%' || #{searchKeyword} || '%'
+					</when>
+				</choose>
+			</trim>
+		</foreach>
+	</trim>
+	</if>
+	<choose>
+		<when test="cri.category!=null and cri.category!=''">
+			<![CDATA[
+				b.category=#{cri.category}
+				a.memberId = #{memberId}
+				and a.winner = 'T'
+	    		and a.bno = b.bno 
+			]]>
+		</when>
+		<otherwise>
+			<![CDATA[
+				a.memberId= #{memberId}
+	    		and a.winner = 'T'
+	    		and a.bno = b.bno
+			]]>
+		</otherwise>
+	</choose>
+</select>
+
+<!-- 4-1. 내가쓴글 목록 -->
+<select id="myBoardList" resultType="org.spring5.domain.BoardVO">
+	<![CDATA[
+		SELECT *
+		FROM (SELECT /*+ INDEX_DESC(a pk_board) */ rownum rn, a.*
+			  FROM tAuction.board a
+			  WHERE
+	]]>		  
+		<if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+		<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+			<foreach item='cri.searchType' collection="cri.searchTypeArr">
+				<trim prefix="OR" >
+					<choose>
+						<when test="cri.searchType=='T'.toString()">
+							title like '%' || #{cri.searchKeyword} || '%'
+						</when>
+						<when test="cri.searchType=='C'.toString()">
+							contents like '%' || #{cri.searchKeyword} || '%'
+						</when>
+						<when test="cri.searchType=='W'.toString()">
+							memberId like '%' || #{cri.searchKeyword} || '%'
+						</when>
+					</choose>
+				</trim>
+			</foreach>
+		</trim>
+		</if>
+		<choose>
+			<when test="cri.category!=null and cri.category!=''">
+				<![CDATA[
+					category=#{cri.category} and rownum <= #{cri.pageNum}*#{cri.amount} 
+					and a.memberId= #{memberId}
+				]]>
+			</when>
+			<otherwise>
+				<![CDATA[
+					rownum <= #{cri.pageNum}*#{cri.amount}
+					and a.memberId= #{memberId}
+				]]>
+			</otherwise>
+		</choose>
+	<![CDATA[
+			   )
+		WHERE rn > (#{cri.pageNum}-1)*#{cri.amount}
+		
+	]]>
+</select>
+
+<!-- 4-2. 내가쓴 글 카운트 -->
+<select id="myBoardListTotalCount" resultType="int">
+	SELECT count(*)
+	FROM tAuction.board
+	<where>
+		<if test="cri.searchKeyword!=null and cri.searchKeyword!=''">
+			<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+				<foreach item='cri.searchType' collection="cri.searchTypeArr">
+					<trim prefix="OR" >
+						<choose>
+							<when test="cri.searchType=='T'.toString()">
+								title like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='C'.toString()">
+								contents like '%' || #{cri.searchKeyword} || '%'
+							</when>
+							<when test="cri.searchType=='W'.toString()">
+								memberId like '%' || #{cri.searchKeyword} || '%'
+							</when>
+						</choose>
+					</trim>
+				</foreach>
+			</trim>
+		</if>
+		<choose>
+		<when test="cri.category!=null and cri.category!=''">
+			<![CDATA[
+				category=#{cri.category}
+				and memberId = #{memberId}
+			]]>
+		</when>
+		<otherwise>
+			<![CDATA[
+				memberId= #{memberId}
+			]]>
+		</otherwise>
+	</choose>
+	</where>
+</select>
+
+</mapper>
+

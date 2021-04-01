@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper 
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.spring5.mapper.MemberMapper"> 
+	<resultMap type="org.spring5.domain.MemberVO" id="memberMap">
+		<id property="memberId" column="memberId"/>
+		<result property="memberId" column="memberId"/>
+		<result property="memberPassword" column="memberPassword"/>
+		<result property="memberName" column="memberName"/>
+		<result property="memberEmail" column="memberEmail"/>
+		<result property="memberPhoneNumber" column="memberPhoneNumber"/>
+		<result property="regDate" column="regDate"/>
+		<result property="updateDate" column="updateDate"/>
+		<collection property="authList" resultMap="authMap"/>
+	</resultMap>
+	
+	
+	<resultMap type="org.spring5.domain.AuthVO" id="authMap">
+		<result property="memberId" column="memberId"/>
+		<result property="authority" column="authority"/>
+	</resultMap>
+	
+	
+	<select id="read" resultMap="memberMap">
+	 <![CDATA[
+		select mem.*, auth.authority
+		from tAuction.member mem INNER JOIN tAuction.memberAuth auth on mem.memberId=auth.memberId
+		where mem.memberId=#{memberId} and enabled='1'
+	 ]]>
+
+	</select>
+	
+	<!-- 회원정보 가져오기 -->
+	<select id="memberSelect" resultType="org.spring5.domain.MemberVO">
+	<![CDATA[
+		select * from tAuction.member where memberId = #{memberId} 
+		]]>
+	</select>
+	
+	<!--아이디 중복 체크  -->
+	<select id="checkId" parameterType="String" resultType="Integer">
+		select count(*) from tAuction.member where memberId= #{memberId}
+	</select>
+	<!--패스워드 체크  -->
+	<select id="checkPassword" parameterType="String" resultType="String">
+		select memberPassword from tAuction.member where memberId= #{memberId}
+	</select>
+	<!-- 회원가입시 사용자 삽입 -->
+	<insert id="memberInsert" parameterType="org.spring5.domain.MemberVO">
+		insert into tAuction.member
+		values (#{memberId},#{memberPassword},#{memberName},#{memberEmail}, #{memberAddressCode},#{memberAddress},#{memberAddressDetail},#{memberAddressExtra},#{memberPhoneNumber},default,default)
+	</insert>
+	<!--회원가입시 사용자 권한 추가 -->
+	<insert id="memberAuthInsert" parameterType="org.spring5.domain.MemberVO">
+		insert into tAuction.memberAuth
+		values (#{memberId},default)
+	</insert>
+	
+	 <!-- 회원정보 수정 -->
+  	<update id="memberModify" parameterType="org.spring5.domain.MemberVO">
+	update tAuction.member
+		<choose>
+				<when test="memberAddressExtra!=null and memberAddressExtra!=''">
+				set memberEmail=#{memberEmail},
+					memberName=#{memberName},
+				    memberAddress=#{memberAddress},
+				    memberPhoneNumber=#{memberPhoneNumber},
+				    memberAddressCode=#{memberAddressCode},
+				    memberAddressDetail=#{memberAddressDetail},
+				    memberAddressExtra=#{memberAddressExtra}
+				</when>
+				<otherwise>
+				set memberEmail=#{memberEmail},
+					memberName=#{memberName},
+				    memberAddress=#{memberAddress},
+				    memberPhoneNumber=#{memberPhoneNumber},
+				    memberAddressCode=#{memberAddressCode},
+				    memberAddressDetail=#{memberAddressDetail}
+				</otherwise>
+		</choose>
+	
+	 where memberId=#{memberId}
+	</update>
+	
+		
+  	<!-- 비밀번호 변경 -->
+ 	 <update id="changePassword" parameterType="org.spring5.domain.MemberVO">
+  		update tAuction.member 
+  		set memberPassword = #{memberPassword}  
+  		where memberId=#{memberId}
+  	</update> 
+  	
+  	<!-- 삭제 요청시 플래그 변경 -->
+  	<update id="memberRemove" parameterType="String">
+  		update tAuction.member
+  		set enabled='0'
+  		where memberId=#{memberId}
+  	</update>
+  	
+	<!--방문자 -->
+  
+     
+    <insert id="visitorCount">
+       insert into tAuction.visitor
+       values (seq_visitor.nextval,default,default)
+    </insert>
+    
+    <update id="visitorCountUp" parameterType="String">
+       update tAuction.visitor
+       set todayCount=todayCount+1
+       where to_char(todayDate,'yyyy/mm/dd')=#{todayDate}
+    </update>
+	
+	
+  	
+  	
+  
+</mapper>

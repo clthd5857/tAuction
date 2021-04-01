@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.spring5.mapper.PostBoardMapper">
+	
+	<select id="postBoardGetList" resultType="org.spring5.domain.BoardVO">
+		SELECT *
+		FROM tAuction.postBoard
+	</select>
+
+	<select id="postBoardGetListWithPaging" resultType="org.spring5.domain.BoardVO">
+		<![CDATA[
+			SELECT bno, title, contents, imageFileName, regdate, updateDate, viewCount
+			FROM (SELECT /*+ INDEX_DESC(a pk_postBoard) */ 
+				rownum rn, bno. title, contents, imageFileName, regdate, updateDate, viewCount
+			FROM
+			 	tAuction.postBoard
+			WHERE rownum <= #{pageNum} * #{amount}   	
+			)
+			WHERE rn > (#{pageNum}-1) * #{amount} 
+		]]>
+	</select>
+	
+	<!-- 조회수 -->
+	<update id="viewCount">
+		UPDATE tAuction.postBoard
+		SET viewCount = (SELECT viewCount
+						FROM tAuction.postBoard
+						WHERE bno=#{bno}) + 1
+		WHERE bno = #{bno}
+	</update>
+	
+
+	 <select id="postBoardGetListWithPagingAndSearching" resultType="org.spring5.domain.BoardVO">
+		<![CDATA[
+			SELECT bno, title, contents, imageFileName, regdate, updateDate, viewCount
+			FROM (SELECT /*+ INDEX_DESC(a pk_board) */ rownum rn, a.*
+				  FROM tAuction.postBoard a
+				  WHERE
+		]]>		  
+			<if test="searchKeyword!=null and searchKeyword!=''">
+			<trim prefix="(" suffix=") AND " prefixOverrides="OR" >
+				<foreach item='searchType' collection="searchTypeArr">
+					<trim prefix="OR" >
+						<choose>
+							<when test="searchType=='T'.toString()">
+								title like '%' || #{searchKeyword} || '%'
+							</when>
+							<when test="searchType=='C'.toString()">
+								contents like '%' || #{searchKeyword} || '%'
+							</when>
+							<when test="searchType=='W'.toString()">
+								memberId like '%' || #{searchKeyword} || '%'
+							</when>
+						</choose>
+					</trim>
+				</foreach>
+			</trim>
+			</if>				
+		<![CDATA[			   
+			rownum <= #{pageNum}*#{amount} 
+			)
+			WHERE rn > (#{pageNum}-1)*#{amount} 
+		]]>
+	</select> 
+	
+	<select id="postBoardGetTotalCount" resultType="int">
+		SELECT count(bno)
+		FROM tAuction.postBoard
+		<where>
+			<if test="searchKeyword!=null and searchKeyword!=''">
+				<trim prefix="(" suffix=") " prefixOverrides="OR" >
+					<foreach item='searchType' collection="searchTypeArr">
+						<trim prefix="OR" >
+							<choose>
+								<when test="searchType=='T'.toString()">
+									title like '%' || #{searchKeyword} || '%'
+								</when>
+								<when test="searchType=='C'.toString()">
+									contents like '%' || #{searchKeyword} || '%'
+								</when>
+								<when test="searchType=='W'.toString()">
+									memberId like '%' || #{searchKeyword} || '%'
+								</when>
+							</choose>
+						</trim>
+					</foreach>
+				</trim>
+			</if>
+		</where>
+		
+	</select>
+	
+	<insert id="postBoardInsert">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="long">
+			SELECT tAuction.seq_postBoard.nextval FROM dual
+		</selectKey>
+		INSERT INTO tAuction.postBoard
+		<choose>
+			<when test="imageFileName!=null and imageFileName!=''">
+				VALUES (#{bno}, #{title}, #{contents}, #{imageFileName}, default, default, default)
+			</when>
+			<otherwise>
+				VALUES (#{bno}, #{title}, #{contents}, null, default, default, default)
+			</otherwise>		
+		</choose>
+	</insert><!-- #{dueDate} 테스트를 위해 잠시 수정 -->
+	
+	<select id="postBoardRead" resultType="org.spring5.domain.BoardVO">
+		SELECT *
+		FROM tAuction.postBoard
+		WHERE bno=#{bno}
+	</select>
+	
+	<!-- 공지글 수정 -->
+	<update id="postBoardModify">
+		UPDATE tAuction.postBoard
+		<choose>
+			<when test="imageFileName!=null and imageFileName!=''">
+				SET title=#{title}, contents=#{contents}, imageFileName=#{imageFileName}
+			</when>
+			<otherwise>
+				SET title=#{title}, contents=#{contents}, updateDate=sysTimestamp(3)		
+			</otherwise>
+		</choose>
+		WHERE bno=#{bno}
+	</update>
+	
+	<update id="postBoardDelete">
+		DELETE FROM tAuction.postBoard
+		WHERE bno=#{bno}
+	</update>
+	
+</mapper>

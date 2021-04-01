@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper 
+ PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+ "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.spring5.mapper.AdminMapper">
+	
+	<!-- 이용 중인 멤버 리스트 -->
+	<select id="memberList" resultType="org.spring5.domain.MemberVO">
+		SELECT /*+ INDEX_DESC(a pk_member) */ a.*
+		FROM tAuction.member a
+		WHERE enabled='1'
+	</select>
+	
+	<!-- 삭제 요청 리스트 -->
+	<select id="memberRemoveList" resultType="org.spring5.domain.MemberVO">
+		SELECT /*+ INDEX_DESC(a pk_member) */ a.*
+		FROM tAuction.member a
+		WHERE enabled='0'
+	</select>
+	
+	<!-- 전체 게시판 리스트 -->
+	<select id="boardList" resultType="org.spring5.domain.BoardVO">
+		SELECT /*+ INDEX_DESC(a pk_board) */ a.*
+		FROM tAuction.board a
+	</select>
+	
+	<!-- 게시판 삭제 요청 리스트 -->
+	<select id="boardRemoveList" resultType="org.spring5.domain.BoardVO">
+		SELECT /*+ INDEX_DESC(a pk_board) */ a.*
+		FROM tAuction.board a 
+		WHERE flag='R'
+	</select>
+	
+	<select id="cmBoardList" resultType="org.spring5.domain.BoardVO">
+		SELECT /*+ INDEX_DESC(a pk_cmBoard) */ a.*
+		FROM tAuction.cmBoard a
+	</select>
+	
+	<select id="cmBoardRemoveList" resultType="org.spring5.domain.BoardVO">
+		SELECT /*+ INDEX_DESC(a pk_cmBoard) */ a.*
+		FROM tAuction.cmBoard a
+		WHERE flag='R'
+	</select>
+<!--  -->
+ 
+  	<select id="visitorCountView" parameterType="String" resultType="String">
+            select nvl(todayCount, '0') as todayCount
+       from tAuction.visitor right outer join dual
+       on to_char(todayDate,'yyyy/mm/dd')=#{day}
+    </select>
+
+
+<!--  -->
+ 
+  	<select id="visitorCountViewYear" parameterType="String" resultType="String">
+            select sum(nvl(todayCount, '0')) as todayCount
+       from tAuction.visitor right outer join dual
+       on to_char(todayDate,'yyyy/mm')=#{yearMonth}
+    </select>
+
+
+
+<!--  -->	
+	<select id="memberRemoveTotalCount" resultType="int">
+		SELECT count(*)
+		FROM tAuction.member
+		where enabled='0'
+	</select>
+	
+	<select id="boardRemoveTotalCount" resultType="int">
+		SELECT count(bno)
+		FROM tAuction.board
+		where flag='F'
+	</select>
+		
+	<select id="cmBoardRemoveTotalCount" resultType="int">
+		SELECT count(bno)
+		FROM tAuction.cmBoard
+		where flag='R'
+	</select>
+	
+	
+	
+	<select id="memberYearCount" parameterType="String" resultType="String">
+		select count(*)
+		from tAuction.member
+		where to_char(joinDate,'yyyy/MM')=#{yearMonth}
+	</select>
+	
+	<select id="boardYearCount" parameterType="String" resultType="String">
+		select count(*)
+		from tAuction.board
+		where to_char(regDate,'yyyy/MM')=#{yearMonth}
+	</select>
+	
+	<select id="memberMonthCount" parameterType="String" resultType="String">
+		select count(*)
+		from tAuction.member
+		where to_char(joinDate,'yyyy/MM/dd')=#{yearMonthDay}
+	</select>
+	
+	<select id="boardMonthCount" parameterType="String" resultType="String">
+		select count(*)
+		from tAuction.board
+		where to_char(regDate,'yyyy/MM/dd')=#{yearMonthDay}
+	</select>
+	
+	
+	<select id="bidCount" parameterType="String" resultType="String">
+	select nvl(sum(bidcount), 0)
+	from (select bidcount,regdate
+      		from tAuction.board)
+	where to_char(regdate,'yyyy/mm')=#{yearMonth}
+	</select>
+	
+	<select id="successbidCount" parameterType="String" resultType="String">
+	select count(*)
+	from tAuction.board a left outer join tAuction.auctionDetail b on a.bno=b.bno
+	where to_char(regdate,'yyyy/mm')=#{yearMonth} and winner='T'
+	</select>
+	
+	<select id="successbidPrice" parameterType="String" resultType="String">
+	select nvl(sum(myPrice), 0)
+	from tAuction.board a left outer join tAuction.auctionDetail b on a.bno=b.bno
+	where to_char(regdate,'yyyy/mm')=#{yearMonth} and winner='T'
+	</select>
+	
+	<select id="dayBoardCount" parameterType="String" resultType="String">
+		select count(*)
+		from tAuction.board
+		where to_char(regDate,'yyyy/MM/dd')=#{day}
+	</select>
+	
+	<select id="dayBidCount" parameterType="String" resultType="String">
+	select nvl(sum(bidcount), 0)
+	from (select bidcount,regdate
+      		from tAuction.board)
+	where to_char(regdate,'yyyy/mm/dd')=#{day}
+	</select>
+	
+	
+	<select id="daySuccessbidCount" parameterType="String" resultType="String">
+	select count(*)
+	from tAuction.board a left outer join tAuction.auctionDetail b on a.bno=b.bno
+	where to_char(regdate,'yyyy/mm/dd')=#{day} and winner='T'
+	</select>
+	
+	<select id="daySuccessbidPrice" parameterType="String" resultType="String">
+	select nvl(sum(myPrice), 0)
+	from tAuction.board a left outer join tAuction.auctionDetail b on a.bno=b.bno
+	where to_char(regdate,'yyyy/mm/dd')=#{day} and winner='T'
+	</select>
+	
+	
+	
+	
+	
+	
+	  <!-- 회원정보 삭제 -->
+ 	 <delete id="memberDelete" parameterType="String">
+		delete from tAuction.member where memberId = #{memberId}
+  	</delete>
+  	 
+  	 <update id="memberRestore" parameterType="String">
+  		update tAuction.member
+  		set enabled='1'
+  		where memberId=#{memberId}
+  	</update>
+  	 
+  	 
+  	 <!-- 게시판 삭제 -->
+ 	 <delete id="boardDelete" parameterType="Long">
+		delete from tAuction.board where bno=#{bno}
+  	</delete>
+  	<!-- 복구 -->
+  	<update id="boardRestore" parameterType="Long">
+  		update tAuction.board
+  		set flag='I'
+  		where bno=#{bno}
+  	</update>
+  	
+  	
+	
+	 <!-- cm게시판 삭제 -->
+ 	 <delete id="cmBoardDelete" parameterType="Long">
+		delete from tAuction.cmBoard where bno=#{bno}
+  	</delete>
+  	
+  	<!-- cm게시판 복구 -->
+  	<update id="cmBoardRestore" parameterType="Long">
+  		update tAuction.cmBoard
+  		set flag='I'
+  		where bno=#{bno}
+  	</update>
+	
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	
+	
+</mapper>

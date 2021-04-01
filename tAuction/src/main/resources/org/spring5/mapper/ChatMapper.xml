@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="org.spring5.mapper.ChatMapper">
+
+	<!-- 방 확인 -->
+	<select id="selectCheckRoom" resultType="int">
+		select count(*)
+		from tAuction.chatroom
+		where senderId=#{senderId} and receiverId=#{receiverId}
+	</select>
+	
+	
+	<!-- 방 만들기 -->
+	<insert id="insertCreateChatRoom">
+		<selectKey keyProperty="chatRoomNo" order="BEFORE" resultType="long">
+			SELECT tAuction.seq_chatroom.nextval FROM dual
+		</selectKey>
+		INSERT INTO tAuction.CHATROOM
+		VALUES (#{chatRoomNo}, #{roomName},#{senderId}, #{receiverId})
+	</insert>
+	
+	<!-- 방 갱신 -->
+	<update id="updateChatRoom">
+		UPDATE tAuction.chatRoom
+		set roomName=#{roomName}
+		where senderId=#{senderId} and receiverId=#{receiverId}
+	</update>
+	
+	
+	<!-- 방 번호 전달 -->
+	<select id="selectRoomNumber" resultType="Long">
+		select CHATROOMNO
+		from tAuction.chatroom
+		where senderId=#{senderId} and receiverId=#{receiverId}
+	</select>
+	
+	<select id="sendRoomList" resultType="org.spring5.domain.ChatRoomVO">
+	     select *
+	     from tAuction.chatroom
+	     where senderId=#{memberId}
+	</select>
+  
+	<select id="receiveRoomList" resultType="org.spring5.domain.ChatRoomVO">
+	     select *
+	     from tAuction.chatroom
+	     where receiverId=#{memberId}
+	</select>
+
+	<select id="messageList" resultType="org.spring5.domain.MessageVO">
+		SELECT *
+		FROM tAuction.message
+		WHERE chatRoomNo= #{chatRoomNo}
+		order by sendTime
+	</select>
+
+	<select id="roomInfo" resultType="org.spring5.domain.ChatRoomVO">
+		select *
+		from tAuction.chatroom
+		WHERE chatRoomNo = #{chatRoomNo}
+	</select>
+
+	<insert id="chatting">
+		insert into tAuction.message
+		values(tAuction.seq_message.nextval, #{messageContent}, default, null, #{senderId}, #{receiverId}, #{chatRoomNo})
+	</insert>
+
+
+	<!-- 관리자 채팅 -->
+	<select id="adminRooms" resultType="org.spring5.domain.MessageVO">
+		select senderId, messageContent, sendTime, chatRoomNo, receiverId
+		from (select row_number() OVER (PARTITION BY chatRoomNo ORDER BY sendTime DESC) row_num,senderId, messageContent, sendTime, chatRoomNo, receiverId
+			  from tAuction.message
+			  where receiverId = #{memberId} or senderId=#{memberId}
+		)	
+		where row_num=1
+		order by sendTime DESC
+	</select>
+	
+	
+	
+
+
+
+ 
+</mapper>
